@@ -1,0 +1,21 @@
+SG_ENTROPY_INCS = \
+	stdx/bit.h \
+	stdx/define.h \
+	stdx/exception.h \
+	io/bit_stream.h \
+	io/stream.h \
+	io/stream_array.h \
+	entropy/arith32.h \
+	entropy/arith64.h \
+	entropy/range32.h \
+	entropy/range64.h
+
+SG_ENTROPY_LIBS = \
+	stdx/bit.cpp \
+	stdx/exception.cpp \
+	io/bit_stream.cpp \
+	io/stream_array.cpp \
+	entropy/arith32.cpp \
+	entropy/arith64.cpp \
+	entropy/range32.cpp \
+	entropy/range64.cpp

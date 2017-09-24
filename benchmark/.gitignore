@@ -1,0 +1,6 @@
+bin/*
+tmp/*
+estquality.dat
+result.dat
+result.tex
+result.pdf

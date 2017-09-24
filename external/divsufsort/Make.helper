@@ -1,0 +1,9 @@
+DIVSUFSORT_INCS = \
+	config.h \
+	divsufsort.h \
+	divsufsort_private.h
+DIVSUFSORT_LIBS = \
+	divsufsort.c \
+	sssort.c \
+	trsort.c \
+	utils.c

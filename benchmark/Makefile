@@ -5,7 +5,7 @@ include compressors.config
 MAXTIME := 90m
 
 #all bwt compressors offering detailed information
-BWINFOCP=$(addprefix bin/,$(shell ls bin))
+BWINFOCP=bin/bwz.x bin/tbwz.x bin/bcm.x bin/tbcm.x bin/wt.x bin/twt.x
 #all compressors
 ALLCP=$(basename $(shell ls cp))
 

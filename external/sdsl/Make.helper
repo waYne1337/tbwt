@@ -1,0 +1,2 @@
+SDSL_INCS = $(addprefix include/sdsl/,$(shell ls external/sdsl/include/sdsl))
+SDSL_LIBS = $(addprefix lib/,$(shell ls external/sdsl/lib))

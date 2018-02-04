@@ -46,6 +46,8 @@ class bwt_run_support {
 		t_idx_t m_bwt_idx; //bwt index
 		t_size_t m_n; //logical text length
 		t_size_t m_idx_n; //text length (indexed BWT)
+		t_size_t m_sigma; //size of alphabet
+		t_size_t m_max_char_val; //maximal value of an element in alphabet
 
 		std::vector<t_idx_t> m_lfr; //lf, only for the start of runs
 		std::vector<t_idx_t> m_rs; //start positions of all runs, sorted ascending.
@@ -69,6 +71,12 @@ class bwt_run_support {
 
 		//! real text length (also length of indexed BWT)
 		const t_size_t &idx_n = m_idx_n;
+
+		//! size of alphabet in text
+		const t_size_t &sigma = m_sigma;
+
+		//! maximal value of an element in alphabet
+		const t_size_t &max_char_val = m_max_char_val;
 
 		//! utility function, returns lf at the start of the given run
 		t_idx_t run_lf( t_idx_t r ) const {

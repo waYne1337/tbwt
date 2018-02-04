@@ -33,6 +33,7 @@
 #include <limits>
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 //! abstract base class for a block compressor.
@@ -189,6 +190,9 @@ class block_compressor {
 			blockend.pop_front();
 			for (auto be : blockend) {
 				decompress_block( in, be, out );
+				if (in.tellg() != be) {
+					throw std::invalid_argument("invalid block decompression");
+				}
 			}
 
 			//leave streams in good state

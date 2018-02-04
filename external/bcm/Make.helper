@@ -1,0 +1,4 @@
+BCM_INCS = \
+	bcm-ss.hpp
+BCM_LIBS = \
+	bcm-ss.cpp

@@ -4,16 +4,21 @@ include compressors.config
 #max runtime per command (used in timeout)
 MAXTIME := 90m
 
-all:	result.dat estquality.dat result.tex result.pdf 
+#all bwt compressors offering detailed information
+BWINFOCP=$(addprefix bin/,$(shell ls bin))
+#all compressors
+ALLCP=$(basename $(shell ls cp))
+
+all:	result.dat bwinfo.dat result.pdf 
 
 install:	.installed
 
 #install compressors
 .installed:
 	chmod a+x visualize.sh
-	@for method in $(COMPRESSORS) ; do \
-		chmod a+x cp/$$method.sh; \
-		cp/$$method.sh i; \
+	for cp in $(ALLCP) ; do \
+		chmod a+x cp/$$cp.sh; \
+		cp/$$cp.sh i; \
 	done
 	> .installed
 
@@ -108,33 +113,36 @@ result.dat:	.installed $(addsuffix .sh,$(addprefix cp/,$(COMPRESSORS))) testcase
 		echo ""; \
 	done
 
-#execute estimator quality benchmark for tunneled bwt
-estquality.dat:	.installed testcases.config
-	@echo "file aux-rel-error size-benefit-rel-error" | tee estquality.dat; \
-	numtestcases=$$(echo "$(TCFILES)" | wc -w); \
+#fetch details about different bwt compressors
+bwinfo.dat: .installed testcases.config
+	@numtestcases=$$(echo "$(TCFILES)" | wc -w); \
+	i="0"; \
 	for tcfile in $(TCFILES) ; do \
-		tcname=$$(basename "$$tcfile" | tr '_' '-'); \
-		tbwzinfo=$$(bin/tbwzip.x -c -i $$tcfile tmp/fcomp); \
-		tbwzsize=$$(stat -c%s tmp/fcomp); \
-		bwzinfo=$$(bin/bwzip.x -c -i $$tcfile tmp/fcomp); \
-		bwzsize=$$(stat -c%s tmp/fcomp); \
-		rm tmp/fcomp; \
-		numtunnels=$$(echo "$$tbwzinfo" | awk '{ if ($$2 == "tunneled" && $$3 == "block" && $$4 == "count") {s+=$$5}} END {print s}'); \
-		if [ "$$numtunnels" -ne "0" ] ; then \
-			estsizebenefit=$$(echo "$$tbwzinfo" | awk '{ if ($$2 == "expected" && $$3 == "size" && $$4 == "benefit") {s+=$$5}} END {print s}'); \
-			estauxsize=$$(echo "$$tbwzinfo" | awk '{ if ($$2 == "expected" && $$3 == "aux" && $$4 == "size") {s+=$$5}} END {print s}'); \
-			realauxsize=$$(echo "$$tbwzinfo" | awk '{ if ($$2 == "aux" && $$3 == "size") {s+=$$4}} END {print s}'); \
-			realsizebenefit=$$(echo "$$bwzsize-$$tbwzsize" | bc); \
-			relauxerror=$$(echo "scale=4;$$estauxsize/$$realauxsize - 1" | bc); \
-			relbenerror=$$(echo "scale=4;$$estsizebenefit/$$realsizebenefit - 1" | bc); \
-			echo "$$tcname $$relauxerror $$relbenerror" | tee -a estquality.dat; \
-		else \
-			echo "$$tcname 0 0" | tee -a estquality.dat; \
+		tcname=$$(basename -z "$$tcfile" | tr '_' '-'); \
+		tcinfo=""; \
+		for cp in $(BWINFOCP) ; do \
+			cpname=$$(basename -s .x "$$cp"); \
+			cpinfo=$$($$cp -c -i $$tcfile tmp/fcomp); \
+			cpinfo=$$(echo "$$cpinfo" | tr -d ' >' | awk '{a[$$1]+=$$2}END{for(i in a) print "'$$cpname'-"i,a[i]}'); \
+			if [ "$$tcinfo" = "" ] ; then \
+				tcinfo="$$cpinfo"; \
+			else \
+				tcinfo="$$tcinfo\\n$$cpinfo"; \
+			fi; \
+		done; \
+		if [ "$$i" -eq "0" ] ; then \
+			echo -n "file" | tee bwinfo.dat; \
+			echo "$$tcinfo" | awk '{printf " "$$1}' >> bwinfo.dat; \
+			i="1"; \
 		fi; \
-	done
+		echo -n "\\n$$tcname" | tee -a bwinfo.dat; \
+		echo "$$tcinfo" | awk '{printf " "$$2}' >> bwinfo.dat; \
+		echo -n "\\tfinished"; \
+	done; \
+	echo "" | tee -a bwinfo.dat
 
 #generate tex-file for visualization
-result.tex:	.installed visualize.sh estquality.dat result.dat compressors.config
+result.tex:	.installed visualize.sh bwinfo.dat result.dat compressors.config
 	./visualize.sh $(COMPRESSORS) > result.tex
 
 #generate pdf-file from visualization file
@@ -155,9 +163,8 @@ rcr:
 
 #clean up benchmark
 clean:
-	rm -f estquality.dat
+	rm -f bwinfo.dat
 	rm -f result.dat
 	rm -f result.tex
 	rm -f result.pdf
 	rm -f tmp/*
-	rm -f bin/*

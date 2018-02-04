@@ -84,16 +84,18 @@ class mtf_coder {
 		                              size_type maxsigma = std::numeric_limits<char_type>::max()+1 ) {
 			//set up alphabet and bitmap
 			std::vector<bool> charUsed( maxsigma );
-			string_t alph;  alph.reserve( maxsigma );
+			string_t alph;  alph.resize( maxsigma );
+			size_type sigma = 0;
 
 			//compute alphabet
 			for (size_type i = 0; i < S.size(); i++) {
 				size_type ch = S[i];
 				if (!charUsed[ch]) {
-					alph.push_back(ch);
+					alph[sigma++] = ch;
 					charUsed[ch] = true;
 				}
 			}
+			alph.resize( sigma );
 			return alph;
 		};
 

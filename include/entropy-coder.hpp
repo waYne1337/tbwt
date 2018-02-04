@@ -30,7 +30,7 @@
 #include <vector>
 
 //SG entropy includes
-#include "entropy/arith64.h"
+#include "entropy/range64.h"
 #include "io/bit_stream.h"
 #include "io/stream.h"
 #include "stdx/define.h"
@@ -95,13 +95,12 @@ class entropy_encoder : public entropy_coder {
 				};
 		};
 
-		//arithmetic coder
+		//range coder
 		output_stream_mapper s_mapper;
-		SG::io::BitOutputStream bs;
-		SG::Entropy::ArithmeticEncoder64 encoder;
+		SG::Entropy::RangeEncoder64 encoder;
 	public:
 		//! constructor
-		entropy_encoder( ostream_t &s ) : s_mapper(s), bs( s_mapper ), encoder( bs ) {};
+		entropy_encoder( ostream_t &s ) : s_mapper(s), encoder( s_mapper ) {};
 
 		//! destructor
 		~entropy_encoder() { flush(); };
@@ -109,7 +108,7 @@ class entropy_encoder : public entropy_coder {
 		//! encodes next character.
 		/*! The character must be in range [0..sigma-1]. passes through
 		  exceptions from the underlying stream
-		  , or throws an invalid_argument if arithmetic coder has problems
+		  , or throws an invalid_argument if range coder has problems
 		 */
 		void encode_char(value_type c) {
 			try {
@@ -127,12 +126,11 @@ class entropy_encoder : public entropy_coder {
 
 		//! flushes this encoder, important to call after encoding process.
 		/*! passes through exceptions from the underlying stream
-		  , or throws an invalid_argument if arithmetic coder has problems
+		  , or throws an invalid_argument if range coder has problems
 		 */
 		void flush() {
 			try {
 				encoder.Flush();
-				bs.Flush();
 				s_mapper.Flush();
 			} catch ( SG::stdx::Exception e ) {
 				throw std::invalid_argument( e.Description + " at " + e.Location );
@@ -156,50 +154,67 @@ class entropy_decoder : public entropy_coder {
 		                    typename std::make_unsigned<typename istream_t::char_type>::type
 		               >::value,
 		               "stream types must be compatible" );
-	public:
-		typedef typename istream_t::pos_type pos_type; //position type in streams
 	private:
 		
 		//class for mapping input streams to SG entropy
 		class input_stream_mapper : public SG::io::InputStream {
 			private:
-				typedef typename entropy_decoder<istream_t>::pos_type pos_type;
-
 				friend class entropy_decoder<istream_t>;
 				istream_t &s; //underlying stream
-				pos_type end; //end position in underlying stream
-				input_stream_mapper( istream_t &_s, pos_type e ) : s(_s), end( e ) {};
+				input_stream_mapper( istream_t &_s ) : s(_s) {};
 			public:
 				virtual int ReadByte() {
-					return (Ended()) ? -1 : (SG::Byte)s.get();
+					return (SG::Byte)s.get();
 				};
 				virtual SG::Boolean Ended() {
-					return s.tellg() == end;
+					return false; //is ignored either way
 				};
 		};
 
-		//arithmetic coder
+		//range coder
 		input_stream_mapper s_mapper;
-		SG::io::BitInputStream bs;
-		SG::Entropy::ArithmeticDecoder64 decoder;
+		SG::Entropy::RangeDecoder64 decoder;
+
+		//last character decoded
+		value_type ch;
 	
 	public:
 		//! constructor, expects a stream and a end position when to stop reading in stream
-		entropy_decoder( istream_t &s, pos_type end) : s_mapper(s, end),
-			bs( s_mapper ), decoder( bs ) {};
+		entropy_decoder( istream_t &s ) : s_mapper(s),
+			decoder( s_mapper ) {};
 
-		//! decodes next character and returns its value.
-		/*! passes through exceptions from the underlying stream
-		  , or throws an invalid_argument if arithmetic coder has problems
-		 */
+		//!reads next character from stream and returns it.
+		/*! function should be called only once, character can be
+		  queried by get_char() function.
+		  IMPORTANT NOTE: between two successive calls of this function,
+		  the function next() should be called, thus to decode a string, use
+		  following order of execution:
+		  decode_char() next() decode_char() next() ... decode_char() next() decode_char()
+		*/
 		value_type decode_char() {
-			value_type ch = sigma();
+			ch = sigma();
 			try {
 				//decode character and adapt frequencies
 				size_type cnt = decoder.GetCurrentCount( freq.back() );
 				while (freq[ch] > cnt) {
 					++freq[ch--];
 				}
+			} catch ( SG::stdx::Exception e ) {
+				throw std::invalid_argument( e.Description + " at " + e.Location );
+			}
+			return ch;
+		}
+
+		//! function returns last decoded character
+		value_type get_char() const {
+			return ch;
+		}
+
+		//! function advances iterator to next character.
+		//! IMPORTANT NOTE: after last call of decode_char(),
+		//! no further next() - call should be performed.
+		void next() {
+			try {
 				//remove range and rescale if necessary
 				decoder.RemoveRange( freq[ch], freq[ch+1]-1, freq.back()-1 );
 				if (freq.back() >= decoder.MaxRange) {
@@ -208,9 +223,7 @@ class entropy_decoder : public entropy_coder {
 			} catch ( SG::stdx::Exception e ) {
 				throw std::invalid_argument( e.Description + " at " + e.Location );
 			}
-
-			return ch;
-		};	
+		}
 };
 
 #endif

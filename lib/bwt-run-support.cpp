@@ -39,6 +39,8 @@ bwt_run_support::bwt_run_support( const t_uchar_t *bwt, t_size_t _n, t_idx_t idx
 	m_bwt_idx = idx;
 	m_idx_n = _n;
 	m_idx_runs = 0;
+	m_sigma = 0;
+	m_max_char_val = 0;
 
 	//build C Array and count runs
 	vector<t_size_t> C( numeric_limits<t_uchar_t>::max() + 1 );
@@ -60,10 +62,14 @@ bwt_run_support::bwt_run_support( const t_uchar_t *bwt, t_size_t _n, t_idx_t idx
 
 	//build cumulative sums of the C array
 	t_idx_t l = 1; //for bwt index
-	for (t_size_t &c : C) {
-		auto tmp = c;
-		c = l;
+	for (t_idx_t c = 0; c < C.size(); c++) {
+		auto tmp = C[c];
+		C[c] = l;
 		l += tmp;
+		if (tmp > 0) {
+			++m_sigma;
+			m_max_char_val = c;
+		}
 	}
 
 	//compute LF

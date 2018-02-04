@@ -27,14 +27,30 @@
 #include <string>
 #include <string.h>
 
-#if defined BWT
-	#include "bwt-compressor.hpp"
+#if defined BW94
+	#include "bw94-compressor.hpp"
 	#define FILESUFFIX ".bwz"
-	#define COMPRESSOR bwt_compressor
+	#define COMPRESSOR bwt_compressor_bw94
 #elif defined TBWT
-	#include "tbwt-compressor.hpp"
+	#include "bw94-compressor.hpp"
 	#define FILESUFFIX ".tbwz"
-	#define COMPRESSOR tbwt_compressor
+	#define COMPRESSOR tbwt_compressor_bw94
+#elif defined BCM
+	#include "bcm-compressor.hpp"
+	#define FILESUFFIX ".bcm"
+	#define COMPRESSOR bwt_compressor_bcm
+#elif defined TBCM
+	#include "bcm-compressor.hpp"
+	#define FILESUFFIX ".tbcm"
+	#define COMPRESSOR tbwt_compressor_bcm
+#elif defined WT
+	#include "wt-compressor.hpp"
+	#define FILESUFFIX ".wt"
+	#define COMPRESSOR bwt_compressor_wt
+#elif defined TWT
+	#include "wt-compressor.hpp"
+	#define FILESUFFIX ".twt"
+	#define COMPRESSOR tbwt_compressor_wt
 #else
 	#error unknown block compressor
 #endif
